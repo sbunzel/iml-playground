@@ -42,7 +42,7 @@ def main():
 
     st.markdown("## The Dataset")
     train = pd.read_csv(
-        f"https://raw.githubusercontent.com/sbunzel/iml-playground/main/data/car-insurance-cold-calls/train.csv"
+        f"https://raw.githubusercontent.com/sbunzel/iml-playground/main/resources/car-insurance-cold-calls/train.csv"
     )
     test = pd.read_csv(
         f"https://raw.githubusercontent.com/sbunzel/iml-playground/main/resources/car-insurance-cold-calls/test.csv"
