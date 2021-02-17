@@ -66,9 +66,7 @@ def main():
         1.0,
         0.5,
     )
-    pred_df = pd.DataFrame(test_preds, columns=y_train.unique()).melt(
-        var_name="target", value_name="prediction"
-    )
+    pred_df = pred_df = pd.DataFrame(data={"target": 1, "prediction": test_preds})
     chart = plot_predictions(pred_df, p_min=threshold, p_max=1)
     distribution_plot.altair_chart(chart, use_container_width=True)
 
