@@ -59,7 +59,8 @@ class Model:
             self.test.drop(columns=[self.target]),
             self.test[self.target],
         )
-        clf = RandomForestClassifier(
+        self.feature_names = self.X_train.columns
+        self.estimator = RandomForestClassifier(
             n_estimators=20, min_samples_leaf=3, max_depth=12, random_state=42
         ).fit(self.X_train, self.y_train)
-        self.y_pred = clf.predict_proba(self.X_test)[:, 1]
+        self.y_pred = self.estimator.predict_proba(self.X_test)[:, 1]
