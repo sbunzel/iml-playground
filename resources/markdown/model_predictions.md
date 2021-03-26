@@ -1,0 +1,3 @@
+We train a standard [Random Forest](https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.RandomForestClassifier.html) model to predict the binary target `CarInsurance` from the available features. The model output is a score between 0 and 1 for each of the possible target values. By visualizing the model predictions on our test set, we get a first feeling for how well our model might be able to separate successful calls from unsuccessful ones.
+
+To derive a decision from a model prediction, we need to decide which threshold to apply to translate a score (between 0 and 1) to a classification (an unsuccessful or successful call).

@@ -8,7 +8,7 @@ from iml_playground import utils
 def main():
 
     st.markdown("# IML Playground")
-    st.markdown("**_An exploration into the world of interpretable machine learning_**")
+    st.markdown("**_An exploration of interpretable machine learning_**")
 
     st.markdown("## The Dataset")
 
@@ -19,7 +19,9 @@ def main():
     with right_col:
         st.markdown(utils.read_md("dataset.md"))
 
-    # Model training
+    st.markdown("## Model Predictions and Performance")
+
+    # TODO: Factor out model training and prediction
     TARGET = "CarInsurance"
     X_train, y_train = train.drop(columns=[TARGET]), train[TARGET]
     X_test, y_test = test.drop(columns=[TARGET]), test[TARGET]
@@ -29,16 +31,27 @@ def main():
     test_preds = model.predict_proba(X_test)[:, 1]
     pred_df = pd.DataFrame(data={"target": 1, "prediction": test_preds})
 
-    st.markdown("## Predictions")
-    distribution_plot = st.empty()
-    threshold = st.slider(
-        "Set the threshold for classifying an observation as class 1",
-        0.0,
-        1.0,
-        0.5,
-    )
-    chart = utils.prediction_histogram(pred_df, p_min=threshold, p_max=1)
-    distribution_plot.altair_chart(chart, use_container_width=True)
+    left_col, right_col = st.beta_columns(2)
+    with left_col:
+        distribution_plot = st.empty()
+        threshold = st.slider(
+            "Set the threshold for classifying an observation as class 1",
+            0.0,
+            1.0,
+            0.5,
+        )
+        chart = utils.prediction_histogram(pred_df, p_min=threshold, p_max=1)
+        distribution_plot.altair_chart(chart, use_container_width=True)
+    with right_col:
+        st.markdown(utils.read_md("model_predictions.md"))
+
+    left_col, right_col = st.beta_columns(2)
+    with left_col:
+        perf_df = utils.class_performance(y_test, test_preds, threshold)
+        chart = utils.plot_class_performance(perf_df)
+        st.altair_chart(chart, use_container_width=True)
+    with right_col:
+        st.markdown(utils.read_md("model_performance.md"))
 
 
 if __name__ == "__main__":
