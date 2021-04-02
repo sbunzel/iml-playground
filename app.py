@@ -70,6 +70,18 @@ def main():
         )
         st.altair_chart(chart, use_container_width=True)
 
+    st.markdown("## Global Effects")
+    left, right = st.beta_columns(2)
+    with left:
+        pd_feature = st.selectbox(
+            label="Select a feature to calculate Partial Dependence for",
+            options=model.feature_names,
+        )
+        chart = iml.GlobalEffects(model=model).plot(feature=pd_feature)
+        st.altair_chart(chart, use_container_width=True)
+    with right:
+        st.write("Placeholder")
+
 
 if __name__ == "__main__":
     main()
