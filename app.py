@@ -1,5 +1,6 @@
 import streamlit as st
 
+import iml_playground as iml
 from iml_playground import importance, performance, predictions, utils
 
 ALT_TITLE_CONFIG = {"fontSize": 14, "offset": 10, "orient": "top", "anchor": "middle"}
@@ -23,7 +24,7 @@ def main():
 
     st.markdown("## Model Predictions and Performance")
 
-    model = predictions.Model(train, test, target=TARGET)
+    model = iml.Model(train, test, target=TARGET)
 
     left, right = st.beta_columns(2)
     with left:
