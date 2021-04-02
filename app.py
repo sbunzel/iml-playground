@@ -14,19 +14,19 @@ def main():
 
     st.markdown("## The Dataset")
 
-    left_col, right_col = st.beta_columns(2)
+    left, right = st.beta_columns(2)
     train, test = utils.read_train_test()
-    with left_col:
+    with left:
         st.markdown(utils.read_md("dataset.md"))
-    with right_col:
+    with right:
         st.dataframe(test.head(100), height=300)
 
     st.markdown("## Model Predictions and Performance")
 
     model = predictions.Model(train, test, target=TARGET)
 
-    left_col, right_col = st.beta_columns(2)
-    with left_col:
+    left, right = st.beta_columns(2)
+    with left:
         distribution_plot = st.empty()
         threshold = st.slider(
             "Set the threshold for classifying an observation as class 1",
@@ -42,11 +42,11 @@ def main():
             scheme=ALT_SCHEME,
         )
         distribution_plot.altair_chart(chart, use_container_width=True)
-    with right_col:
+    with right:
         st.markdown(utils.read_md("model_predictions.md"))
 
-    left_col, right_col = st.beta_columns(2)
-    with left_col:
+    left, right = st.beta_columns(2)
+    with left:
         chart = performance.plot_class_performance(
             y_test=model.y_test,
             test_preds=model.y_pred,
@@ -55,15 +55,15 @@ def main():
             scheme=ALT_SCHEME,
         )
         st.altair_chart(chart, use_container_width=True)
-    with right_col:
+    with right:
         st.markdown(utils.read_md("model_performance.md"))
 
     st.markdown("## Feature Importance")
 
-    left_col, right_col = st.beta_columns(2)
-    with left_col:
+    left, right = st.beta_columns(2)
+    with left:
         st.markdown(utils.read_md("feature_importance.md"))
-    with right_col:
+    with right:
         chart = importance.plot_permutation_importance(
             model, title_config=ALT_TITLE_CONFIG, top_n=10
         )
