@@ -84,7 +84,7 @@ def main():
         st.write("Placeholder")
     with left:
         global_effects_feature = st.selectbox(
-            label="Select a feature to calculate Partial Dependence for",
+            label="Select a feature to calculate global effects for",
             options=model.feature_names,
         )
         chart = iml.GlobalEffects(
