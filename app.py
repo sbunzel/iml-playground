@@ -81,7 +81,7 @@ def main():
             options=GLOBAL_EFFECTS_METHODS,
             format_func=lambda s: s.replace("_", " ").title(),
         )
-        st.write("Placeholder")
+        st.markdown(utils.read_md(f"{global_effects_method}.md"))
     with left:
         start_index = list(model.feature_names).index("LastCallDurationSecs")
         global_effects_feature = st.selectbox(
