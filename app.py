@@ -83,9 +83,11 @@ def main():
         )
         st.write("Placeholder")
     with left:
+        start_index = list(model.feature_names).index("LastCallDurationSecs")
         global_effects_feature = st.selectbox(
             label="Select a feature to calculate global effects for",
             options=model.feature_names,
+            index=start_index,
         )
         chart = iml.GlobalEffects(
             model=model, method=global_effects_method, feature=global_effects_feature
