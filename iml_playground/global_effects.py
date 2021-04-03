@@ -63,7 +63,7 @@ class GlobalEffects:
         return (
             chart.properties(
                 title=f"Global Effect of Feature '{self.feature}' on the Predictions",
-                height=300,
+                height=350,
             )
             .configure_title(**title_config)
             .resolve_axis(y="independent")
