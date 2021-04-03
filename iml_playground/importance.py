@@ -33,7 +33,7 @@ def plot_permutation_importance(
         .encode(
             x="Importance:Q", y=alt.Y("Feature:N", sort=sorted_names[::-1], title="")
         )
-        .properties(title="Permutation Feature Importances")
+        .properties(title="Permutation Feature Importances", height=300)
         .configure_title(**title_config)
     )
     return chart
