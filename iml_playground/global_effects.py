@@ -4,6 +4,7 @@ import altair as alt
 import pandas as pd
 from sklearn import inspection
 
+from .ale import _first_order_ale_quant, _get_centres
 from .model import Model
 
 
@@ -11,7 +12,14 @@ class GlobalEffects:
     def __init__(self, model: Model, method: str, feature: str) -> None:
         self.model = model
         self.feature = feature
-        methods = {"partial_dependence_plot": self._calculate_partial_dependence}
+        X = model.X_test.copy()
+        self.X = X.loc[
+            X[feature].between(X[feature].quantile(0.05), X[feature].quantile(0.95))
+        ]
+        methods = {
+            "partial_dependence_plot": self._calculate_partial_dependence,
+            "accumulated_local_effects": self._calculate_ale,
+        }
         try:
             self.avg_effect, self.values = methods[method](feature=feature)
         except KeyError:
@@ -22,11 +30,22 @@ class GlobalEffects:
     def _calculate_partial_dependence(self, feature: str):
         res = inspection.partial_dependence(
             estimator=self.model.estimator,
-            X=self.model.X_test,
+            X=self.X,
             features=[feature],
             kind="average",
+            percentiles=(0, 1),
         )
         return res["average"], res["values"][0]
+
+    def _calculate_ale(self, feature: str):
+        effects, quantiles = _first_order_ale_quant(
+            self.model.estimator.predict,
+            self.X,
+            feature,
+            50,
+        )
+        values = _get_centres(quantiles)
+        return effects, values
 
     def plot(self, title_config: Dict[str, Any]) -> alt.Chart:
         effects_df = pd.DataFrame(

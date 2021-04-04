@@ -72,7 +72,7 @@ def main():
 
     st.markdown("## Global Effects")
 
-    GLOBAL_EFFECTS_METHODS = ["partial_dependence_plot"]
+    GLOBAL_EFFECTS_METHODS = ["partial_dependence_plot", "accumulated_local_effects"]
 
     left, right = st.beta_columns(2)
     with right:
@@ -90,7 +90,9 @@ def main():
             index=start_index,
         )
         chart = iml.GlobalEffects(
-            model=model, method=global_effects_method, feature=global_effects_feature
+            model=model,
+            method=global_effects_method,
+            feature=global_effects_feature,
         ).plot(title_config=ALT_TITLE_CONFIG)
         st.altair_chart(chart, use_container_width=True)
 
