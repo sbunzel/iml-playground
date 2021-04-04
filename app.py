@@ -1,7 +1,7 @@
 import streamlit as st
 
 import iml_playground as iml
-from iml_playground import importance, performance, predictions, utils
+from iml_playground import performance, predictions, utils
 
 ALT_TITLE_CONFIG = {"fontSize": 14, "offset": 10, "orient": "top", "anchor": "middle"}
 ALT_SCHEME = "tableau10"
@@ -65,9 +65,8 @@ def main():
     with left:
         st.markdown(utils.read_md("feature_importance.md"))
     with right:
-        chart = importance.plot_permutation_importance(
-            model, title_config=ALT_TITLE_CONFIG, top_n=10
-        )
+        imp = iml.FeatureImportance(model=model, top_n=10)
+        chart = imp.plot(title_config=ALT_TITLE_CONFIG)
         st.altair_chart(chart, use_container_width=True)
 
     st.markdown("## Global Effects")
