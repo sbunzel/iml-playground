@@ -47,19 +47,16 @@ class GlobalEffects:
         min_value, max_value = (self.values.min(), self.values.max())
         values_df = self.model.X_test[[self.feature]]
         values_df = values_df.loc[values_df[self.feature].between(min_value, max_value)]
-        values_density = (
+        step_size = (max_value - min_value) / 10
+        values_hist = (
             alt.Chart(values_df)
-            .transform_density(
-                self.feature,
-                as_=[self.feature, "Density"],
-            )
-            .mark_area(opacity=0.3)
+            .mark_bar(opacity=0.3)
             .encode(
-                x=alt.X(f"{self.feature}:Q"),
-                y="Density:Q",
+                alt.X(f"{self.feature}:Q", bin=alt.Bin(step=step_size)),
+                y=alt.Y("count()", title="Number of Samples"),
             )
         )
-        chart = effect_line + values_density
+        chart = values_hist + effect_line
         return (
             chart.properties(
                 title=f"Global Effect of Feature '{self.feature}' on the Predictions",
