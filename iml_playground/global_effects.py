@@ -11,7 +11,7 @@ class GlobalEffects:
     def __init__(self, model: Model, method: str, feature: str) -> None:
         self.model = model
         self.feature = feature
-        methods = {"partial_dependence": self._calculate_partial_dependence}
+        methods = {"partial_dependence_plot": self._calculate_partial_dependence}
         try:
             self.avg_effect, self.values = methods[method](feature=feature)
         except KeyError:
