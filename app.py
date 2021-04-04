@@ -82,11 +82,9 @@ def main():
         )
         st.markdown(utils.read_md(f"{global_effects_method}.md"))
     with left:
-        start_index = list(model.feature_names).index("LastCallDurationSecs")
         global_effects_feature = st.selectbox(
             label="Select a feature to calculate global effects for",
-            options=model.feature_names,
-            index=start_index,
+            options=imp.sorted_names[::-1],
         )
         chart = iml.GlobalEffects(
             model=model,
