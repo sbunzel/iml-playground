@@ -40,7 +40,7 @@ class GlobalEffects:
             .mark_line()
             .encode(
                 x=alt.X(f"{self.feature}:Q"),
-                y=alt.Y("Average Effect:Q", scale=alt.Scale(domain=(0, 1))),
+                y=alt.Y("Average Effect:Q"),
             )
         )
 
