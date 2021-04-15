@@ -1,7 +1,7 @@
 import streamlit as st
 
 import iml_playground as iml
-from iml_playground import importance, performance, predictions, utils
+from iml_playground import performance, predictions, utils
 
 ALT_TITLE_CONFIG = {"fontSize": 14, "offset": 10, "orient": "top", "anchor": "middle"}
 ALT_SCHEME = "tableau10"
@@ -65,9 +65,32 @@ def main():
     with left:
         st.markdown(utils.read_md("feature_importance.md"))
     with right:
-        chart = importance.plot_permutation_importance(
-            model, title_config=ALT_TITLE_CONFIG, top_n=10
+        imp = iml.FeatureImportance(model=model, top_n=10)
+        chart = imp.plot(title_config=ALT_TITLE_CONFIG)
+        st.altair_chart(chart, use_container_width=True)
+
+    st.markdown("## Global Effects")
+
+    GLOBAL_EFFECTS_METHODS = ["partial_dependence_plot"]
+
+    left, right = st.beta_columns(2)
+    with right:
+        global_effects_method = st.selectbox(
+            label="Select a method to explore",
+            options=GLOBAL_EFFECTS_METHODS,
+            format_func=lambda s: s.replace("_", " ").title(),
         )
+        st.markdown(utils.read_md(f"{global_effects_method}.md"))
+    with left:
+        global_effects_feature = st.selectbox(
+            label="Select a feature to calculate global effects for",
+            options=imp.sorted_names[::-1],
+        )
+        chart = iml.GlobalEffects(
+            model=model,
+            method=global_effects_method,
+            feature=global_effects_feature,
+        ).plot(title_config=ALT_TITLE_CONFIG)
         st.altair_chart(chart, use_container_width=True)
 
 
