@@ -71,7 +71,7 @@ def main():
 
     st.markdown("## Global Effects")
 
-    GLOBAL_EFFECTS_METHODS = ["partial_dependence_plot", "accumulated_local_effects"]
+    GLOBAL_EFFECTS_METHODS = ["partial_dependence_plot"]
 
     left, right = st.beta_columns(2)
     with right:

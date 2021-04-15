@@ -5,7 +5,6 @@ import numpy as np
 import pandas as pd
 from sklearn import inspection
 
-from .ale import _first_order_ale_quant, _get_centres
 from .model import Model
 
 
@@ -21,7 +20,6 @@ class GlobalEffects:
         ]
         methods = {
             "partial_dependence_plot": self._calculate_partial_dependence,
-            "accumulated_local_effects": self._calculate_ale,
         }
         try:
             self.avg_effect, self.values = methods[method](feature=feature)
@@ -41,16 +39,6 @@ class GlobalEffects:
             percentiles=(0, 1),
         )
         effects, values = pd["average"].reshape(-1), pd["values"][0]
-        return effects, values
-
-    def _calculate_ale(self, feature: str) -> Tuple[np.ndarray, np.ndarray]:
-        effects, quantiles = _first_order_ale_quant(
-            self.model.estimator.predict,
-            self.X,
-            feature,
-            50,
-        )
-        values = _get_centres(quantiles)
         return effects, values
 
     def plot(self, title_config: Dict[str, Any]) -> alt.Chart:
