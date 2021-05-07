@@ -1,5 +1,4 @@
 altair==4.1.0
-loguru==0.3.2
 matplotlib==3.4.1
 pandas==1.2.2
 scikit-learn==0.24.1
