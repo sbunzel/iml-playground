@@ -9,11 +9,11 @@ def read_md(file):
 
 
 @st.cache
-def read_train_test():
+def read_train_test(dataset: str):
     train = pd.read_csv(
-        f"https://raw.githubusercontent.com/sbunzel/iml-playground/main/resources/car-insurance-cold-calls/train.csv"
+        f"https://raw.githubusercontent.com/sbunzel/iml-playground/main/resources/data/{dataset}/train.csv"
     )
     test = pd.read_csv(
-        f"https://raw.githubusercontent.com/sbunzel/iml-playground/main/resources/car-insurance-cold-calls/test.csv"
+        f"https://raw.githubusercontent.com/sbunzel/iml-playground/main/resources/data/{dataset}/test.csv"
     )
     return train, test

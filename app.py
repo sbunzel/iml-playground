@@ -5,7 +5,10 @@ from iml_playground import performance, predictions, utils
 
 ALT_TITLE_CONFIG = {"fontSize": 14, "offset": 10, "orient": "top", "anchor": "middle"}
 ALT_SCHEME = "tableau10"
-TARGET = "CarInsurance"
+DATASET_TARGET_MAPPER = {
+    "car-insurance-cold-calls": "CarInsurance",
+    # "stroke-prediction": "stroke",
+}
 
 
 def main():
@@ -16,15 +19,20 @@ def main():
     st.markdown("## The Dataset")
 
     left, right = st.beta_columns(2)
-    train, test = utils.read_train_test()
     with left:
+        dataset = st.selectbox(
+            label="Select a dataset",
+            options=list(DATASET_TARGET_MAPPER.keys()),
+            format_func=lambda s: s.replace("-", " ").title(),
+        )
         st.markdown(utils.read_md("dataset.md"))
     with right:
+        train, test = utils.read_train_test(dataset)
         st.dataframe(test.head(100), height=300)
 
     st.markdown("## Model Predictions and Performance")
 
-    model = iml.Model(train, test, target=TARGET)
+    model = iml.Model(train, test, target=DATASET_TARGET_MAPPER[dataset])
 
     left, right = st.beta_columns(2)
     with left:
