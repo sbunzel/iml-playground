@@ -1,0 +1,12 @@
+# additional dependencies for dev container
+channels:
+  - conda-forge
+  - nodefaults
+
+dependencies:
+  - black==20.8b1
+  - flake8==3.8.4
+  - pre_commit==2.12.1
+  - pytest==6.2.2
+  - pytest-cov==2.11.1
+  - python==3.7.10 # This is what streamlit uses

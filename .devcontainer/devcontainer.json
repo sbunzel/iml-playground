@@ -1,0 +1,32 @@
+{
+    "dockerComposeFile": [
+        "docker-compose.yml"
+    ],
+    "runServices": [
+        "dev-container"
+    ],
+    "service": "dev-container",
+    "shutdownAction": "stopCompose",
+    "extensions": [
+        "ms-python.vscode-pylance",
+        "ms-azuretools.vscode-docker",
+        "njpwerner.autodocstring"
+    ],
+    "settings": {
+        "python.pythonPath": "/opt/conda/envs/devenv/bin/python",
+        "python.formatting.blackPath": "/opt/conda/envs/devenv/bin/black",
+        "python.languageServer": "Pylance",
+        "python.testing.unittestEnabled": false,
+        "python.testing.nosetestsEnabled": false,
+        "python.testing.pytestEnabled": true,
+        "python.linting.flake8Enabled": true,
+        "python.linting.flake8Args": ["--max-line-length=100"],
+        "editor.formatOnSave": true,
+        "editor.defaultFormatter": "ms-python.python",
+        "editor.codeActionsOnSave": {"source.organizeImports": true},
+        "autoDocstring.docstringFormat": "google"
+    },
+    "remoteUser": "atdev",
+    "workspaceFolder": "/workspace",
+    "postAttachCommand": ".devcontainer/post-attach.sh",
+}
