@@ -1,0 +1,25 @@
+{
+    "dockerComposeFile": [
+        "docker-compose.yml"
+    ],
+    "runServices": [
+        "dev-container"
+    ],
+    "service": "dev-container",
+    "shutdownAction": "stopCompose",
+    "extensions": [
+        "ms-python.vscode-pylance",
+        "ms-azuretools.vscode-docker"
+    ],
+    "settings": {
+        "python.pythonPath": "/opt/conda/envs/devenv/bin/python",
+        "python.languageServer": "Pylance",
+        "python.testing.unittestEnabled": false,
+        "python.testing.nosetestsEnabled": false,
+        "python.testing.pytestEnabled": true,
+        "terminal.integrated.defaultProfile.linux": "/bin/bash",
+    },
+    "remoteUser": "atdev",
+    "workspaceFolder": "/workspace",
+    "postAttachCommand": ".devcontainer/post-attach.sh",
+}

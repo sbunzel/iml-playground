@@ -1,0 +1,17 @@
+version: "3.7"
+
+services:
+  dev-container:
+    image: at-vscode-devcontainer-conda:latest
+    build:
+      context: ../
+      dockerfile: .devcontainer/Dockerfile
+      args:
+        user_name: atdev
+       # user_id has to be same as local user id.
+       # Check with `id -u' command and change if neccessary.
+        user_id: 1000 
+    volumes:
+      - ${PWD}/:/workspace:rw
+      - ${HOME}/.gitconfig:/home/atdev/.gitconfig:rw
+      - ${HOME}/.ssh:/home/atdev/.ssh:ro
