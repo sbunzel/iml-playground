@@ -1,19 +1,5 @@
 from pathlib import Path
 
-import pandas as pd
-import streamlit as st
-
 
 def read_md(file):
     return Path(f"resources/markdown/{file}").read_text()
-
-
-@st.cache
-def read_train_test(dataset: str):
-    train = pd.read_csv(
-        f"https://raw.githubusercontent.com/sbunzel/iml-playground/main/resources/data/{dataset}/train.csv"
-    )
-    test = pd.read_csv(
-        f"https://raw.githubusercontent.com/sbunzel/iml-playground/main/resources/data/{dataset}/test.csv"
-    )
-    return train, test

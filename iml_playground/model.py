@@ -1,85 +1,100 @@
 from dataclasses import dataclass
+from typing import Any, Dict
 
-import numpy as np
+import altair as alt
 import pandas as pd
-from sklearn.compose import ColumnTransformer
+from sklearn import metrics
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.impute import SimpleImputer
-from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import OneHotEncoder
+
+from .dataset import Dataset
 
 
 @dataclass
 class Model:
-    """A container for the trained model and the relevant training and prediction data."""
+    """A container for the trained model and predictions."""
 
-    train: pd.DataFrame
-    test: pd.DataFrame
-    target: str
+    ds: Dataset
 
     def __post_init__(self):
-        self._split_x_y()
-        self._register_feature_names()
-        self._impute_and_encode()
         self._fit_estimator()
         self._register_predictions()
-
-    def _split_x_y(self):
-        self.X_train, self.y_train = (
-            self.train.drop(columns=[self.target]),
-            self.train[self.target],
-        )
-        self.X_test, self.y_test = (
-            self.test.drop(columns=[self.target]),
-            self.test[self.target],
-        )
-
-    def _register_feature_names(self):
-        self.cat_features = [
-            c
-            for c in self.X_train.columns
-            if pd.api.types.is_object_dtype(self.X_train[c])
-        ]
-        self.num_features = [
-            c for c in self.X_train.columns if c not in self.cat_features
-        ]
-
-    def _impute_and_encode(self):
-        cat_pipe = Pipeline(
-            [
-                ("imputer", SimpleImputer(strategy="constant", fill_value="missing")),
-                ("onehot", OneHotEncoder(sparse=False, handle_unknown="ignore")),
-            ]
-        )
-        transfomer = ColumnTransformer(
-            [
-                ("cat", cat_pipe, self.cat_features),
-                (
-                    "num",
-                    SimpleImputer(strategy="mean"),
-                    self.num_features,
-                ),
-            ],
-            sparse_threshold=0,
-        )
-        X_train_trans = transfomer.fit_transform(self.X_train)
-        X_test_trans = transfomer.transform(self.X_test)
-        if len(self.cat_features) > 0:
-            cat_features_transformed = (
-                transfomer.named_transformers_["cat"]
-                .named_steps["onehot"]
-                .get_feature_names(input_features=self.cat_features)
-            )
-            self.feature_names = np.r_[cat_features_transformed, self.num_features]
-        else:
-            self.feature_names = np.array(self.num_features)
-        self.X_train = pd.DataFrame(X_train_trans, columns=self.feature_names)
-        self.X_test = pd.DataFrame(X_test_trans, columns=self.feature_names)
 
     def _fit_estimator(self):
         self.estimator = RandomForestClassifier(
             n_estimators=20, min_samples_leaf=3, max_depth=12, random_state=42
-        ).fit(self.X_train, self.y_train)
+        ).fit(self.ds.X_train, self.ds.y_train)
 
     def _register_predictions(self):
-        self.y_pred = self.estimator.predict_proba(self.X_test)[:, 1]
+        self.y_pred = self.estimator.predict_proba(self.ds.X_test)[:, 1]
+
+    def plot_prediction_histogram(
+        self, p_min: float, p_max: float, altair_config: Dict[str, Any]
+    ) -> alt.Chart:
+        df = pd.DataFrame(data={"target": 1, "prediction": self.y_pred}).assign(
+            focus=lambda df: df["prediction"].between(p_min, p_max)
+        )
+        color = alt.Color(
+            "focus:N",
+            legend=None,
+            scale=alt.Scale(scheme=altair_config["scheme"]),
+        )
+        return (
+            alt.Chart(df)
+            .mark_bar()
+            .encode(
+                alt.X(
+                    "prediction:Q",
+                    bin=alt.Bin(step=0.01),
+                    scale=alt.Scale(domain=(0, 1)),
+                    title="Predicted Probability of class 1",
+                ),
+                y=alt.Y("count()", title="Number of Predictions"),
+                color=color,
+                tooltip=["target"],
+            )
+            .properties(
+                width="container", height=300, title="Distribution of Model Predictions"
+            )
+            .configure_title(**altair_config["title_config"])
+        )
+
+    def plot_class_performance(
+        self,
+        threshold: float,
+        altair_config: Dict[str, Any],
+    ) -> alt.Chart:
+        perf_df = self._class_performance(threshold=threshold)
+        plot_df = perf_df.drop(columns="support").melt(
+            id_vars=["target"], var_name="metric", value_name="score"
+        )
+
+        return (
+            alt.Chart(plot_df)
+            .mark_bar()
+            .encode(
+                x=alt.X("score:Q", title="Score", scale=alt.Scale(domain=(0, 1))),
+                y=alt.Y("target:N", title=""),
+                row=alt.Row("metric:N", title=""),
+                color=alt.Color(
+                    "metric:N",
+                    legend=None,
+                    scale=alt.Scale(scheme=altair_config["scheme"]),
+                ),
+            )
+            .properties(width="container", title="Classification Report")
+            .configure_title(**altair_config["title_config"])
+        )
+
+    def _class_performance(self, threshold: float) -> pd.DataFrame:
+        report = metrics.classification_report(
+            y_true=self.ds.y_test,
+            y_pred=self.y_pred > threshold,
+            output_dict=True,
+        )
+        df = (
+            pd.DataFrame(report)[[str(c) for c in self.ds.y_test.unique()]]
+            .T.astype({"support": int})[["f1-score", "precision", "recall", "support"]]
+            .reset_index()
+            .rename(columns={"index": "target"})
+        )
+        return df
