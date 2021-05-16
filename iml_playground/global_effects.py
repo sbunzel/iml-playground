@@ -32,10 +32,12 @@ class GlobalEffects:
     def _calculate_partial_dependence(
         self, feature: str
     ) -> Tuple[np.ndarray, np.ndarray]:
+        # apparently, this works better with inspection.partial_dependence, not really sure why...
+        feature_id = self.X.columns.get_loc(feature)
         pd = inspection.partial_dependence(
             estimator=self.model.estimator,
             X=self.X,
-            features=[feature],
+            features=[feature_id],
             kind="average",
             percentiles=(0, 1),
         )
