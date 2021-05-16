@@ -1,13 +1,18 @@
 import streamlit as st
 
 import iml_playground as iml
-from iml_playground import performance, predictions, utils
+from iml_playground import utils
 
-ALT_TITLE_CONFIG = {"fontSize": 14, "offset": 10, "orient": "top", "anchor": "middle"}
-ALT_SCHEME = "tableau10"
-DATASET_TARGET_MAPPER = {
-    "car-insurance-cold-calls": "CarInsurance",
-    # "stroke-prediction": "stroke",
+ALTAIR_CONFIG = {
+    "title_config": {"fontSize": 14, "offset": 10, "orient": "top", "anchor": "middle"},
+    "scheme": "tableau10",
+}
+DATASET_CONFIG = {
+    "car-insurance-cold-calls": {
+        "target": "CarInsurance",
+        "models": ["Random Forest Classifier"],
+    }
+    # "new-dataset-name": "new-dataset-target",
 }
 
 
@@ -20,19 +25,25 @@ def main():
 
     left, right = st.beta_columns(2)
     with left:
-        dataset = st.selectbox(
+        dataset_name = st.selectbox(
             label="Select a dataset",
-            options=list(DATASET_TARGET_MAPPER.keys()),
+            options=list(DATASET_CONFIG.keys()),
             format_func=lambda s: s.replace("-", " ").title(),
         )
         st.markdown(utils.read_md("dataset.md"))
     with right:
-        train, test = utils.read_train_test(dataset)
-        st.dataframe(test.head(100), height=300)
+        train, test = utils.read_train_test(dataset=dataset_name)
+        dataset = iml.Dataset(
+            train, test, target=DATASET_CONFIG[dataset_name]["target"]
+        )
+        st.dataframe(dataset.sample, height=300)
 
     st.markdown("## Model Predictions and Performance")
-
-    model = iml.Model(train, test, target=DATASET_TARGET_MAPPER[dataset])
+    estimator_name = st.sidebar.selectbox(
+        label="Select the model type to use",
+        options=DATASET_CONFIG[dataset_name]["models"],
+    )
+    model = iml.Model(ds=dataset, estimator_name=estimator_name)
 
     left, right = st.beta_columns(2)
     with left:
@@ -43,12 +54,8 @@ def main():
             1.0,
             0.5,
         )
-        chart = predictions.plot_prediction_histogram(
-            model.y_pred,
-            p_min=threshold,
-            p_max=1,
-            title_config=ALT_TITLE_CONFIG,
-            scheme=ALT_SCHEME,
+        chart = model.plot_prediction_histogram(
+            p_min=threshold, p_max=1, altair_config=ALTAIR_CONFIG
         )
         distribution_plot.altair_chart(chart, use_container_width=True)
     with right:
@@ -56,12 +63,9 @@ def main():
 
     left, right = st.beta_columns(2)
     with left:
-        chart = performance.plot_class_performance(
-            y_test=model.y_test,
-            test_preds=model.y_pred,
+        chart = model.plot_class_performance(
             threshold=threshold,
-            title_config=ALT_TITLE_CONFIG,
-            scheme=ALT_SCHEME,
+            altair_config=ALTAIR_CONFIG,
         )
         st.altair_chart(chart, use_container_width=True)
     with right:
@@ -73,8 +77,8 @@ def main():
     with left:
         st.markdown(utils.read_md("feature_importance.md"))
     with right:
-        imp = iml.FeatureImportance(model=model, top_n=10)
-        chart = imp.plot(title_config=ALT_TITLE_CONFIG)
+        imp = iml.FeatureImportance(model=model)
+        chart = imp.plot(altair_config=ALTAIR_CONFIG, top_n=10)
         st.altair_chart(chart, use_container_width=True)
 
     st.markdown("## Global Effects")
@@ -98,7 +102,7 @@ def main():
             model=model,
             method=global_effects_method,
             feature=global_effects_feature,
-        ).plot(title_config=ALT_TITLE_CONFIG)
+        ).plot(altair_config=ALTAIR_CONFIG)
         st.altair_chart(chart, use_container_width=True)
 
 

@@ -11,11 +11,12 @@ from .model import Model
 class GlobalEffects:
     def __init__(self, model: Model, method: str, feature: str) -> None:
         self.model = model
+        self.ds = model.ds
         self.feature = feature
-        self.X = model.X_test.loc[
-            model.X_test[feature].between(
-                model.X_test[feature].quantile(0.05),
-                model.X_test[feature].quantile(0.95),
+        self.X = self.ds.X_test.loc[
+            self.ds.X_test[feature].between(
+                self.ds.X_test[feature].quantile(0.05),
+                self.ds.X_test[feature].quantile(0.95),
             )
         ]
         methods = {
@@ -41,7 +42,7 @@ class GlobalEffects:
         effects, values = pd["average"].reshape(-1), pd["values"][0]
         return effects, values
 
-    def plot(self, title_config: Dict[str, Any]) -> alt.Chart:
+    def plot(self, altair_config: Dict[str, Any]) -> alt.Chart:
         # Line plot of average effects
         effects_df = pd.DataFrame(
             {
@@ -59,8 +60,8 @@ class GlobalEffects:
         )
         # Histogram of feature values
         min_value, max_value = (self.values.min(), self.values.max())
-        values_df = self.model.X_test[[self.feature]].loc[
-            self.model.X_test[self.feature].between(min_value, max_value)
+        values_df = self.ds.X_test[[self.feature]].loc[
+            self.ds.X_test[self.feature].between(min_value, max_value)
         ]
         step_size = (max_value - min_value) / 10
         values_hist = (
@@ -78,7 +79,7 @@ class GlobalEffects:
                 title=f"Global Effect of Feature '{self.feature}' on the Predictions",
                 height=350,
             )
-            .configure_title(**title_config)
+            .configure_title(**altair_config["title_config"])
             .resolve_axis(y="independent")
             .resolve_scale(y="independent")
         )
