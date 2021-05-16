@@ -1,4 +1,3 @@
-# additional dependencies for dev container
 channels:
   - conda-forge
   - nodefaults
