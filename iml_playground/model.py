@@ -33,20 +33,23 @@ class Model:
             ),
         }
         self.estimator = estimators[self.estimator_name]
+        if self.estimator._estimator_type == "classifier":
+            self.task = "classification"
+        elif self.estimator._estimator_type == "regressor":
+            self.task = "regression"
+        else:
+            raise ValueError(
+                f"Estimator type '{self.estimator._estimator_type}' is not supported. Use 'classifier' or 'regressor'."  # noqa
+            )
 
     def _fit_estimator(self):
         self.estimator = self.estimator.fit(self.ds.X_train, self.ds.y_train)
 
     def _register_predictions(self):
-        estimator_type = self.estimator._estimator_type
-        if estimator_type == "classifier":
+        if self.task == "classification":
             self.y_pred = self.estimator.predict_proba(self.ds.X_test)[:, 1]
-        elif estimator_type == "regressor":
+        elif self.task == "regression":
             self.y_pred = self.estimator.predict(self.ds.X_test)
-        else:
-            raise ValueError(
-                f"Estimator type '{estimator_type}' is not supported. Use 'classifier' or 'regressor'."  # noqa
-            )
 
     def plot_prediction_histogram(
         self, p_min: float, p_max: float, altair_config: Dict[str, Any]
