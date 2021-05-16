@@ -30,17 +30,20 @@ class FeatureImportance:
         sorted_imp = imp.importances[sorted_idx]
         return sorted_imp, sorted_names
 
-    def plot(self, altair_config: Dict[str, Any], top_n: int = 15) -> alt.Chart:
+    def _build_plot_df(self, top_n: int) -> pd.DataFrame:
         top_n_imp = self.sorted_imp[-top_n:]
         top_n_names = self.sorted_names[-top_n:]
-        df = pd.DataFrame(
+        return pd.DataFrame(
             {
-                "Feature": np.repeat(top_n_names, top_n_imp.shape[0]),
+                "Feature": np.repeat(top_n_names, top_n_imp.shape[1]),
                 "Importance": top_n_imp.reshape(-1),
             }
         ).round(6)
+
+    def plot(self, altair_config: Dict[str, Any], top_n: int = 15) -> alt.Chart:
+        plot_df = self._build_plot_df(top_n=top_n)
         chart = (
-            alt.Chart(df)
+            alt.Chart(plot_df)
             .mark_boxplot(outliers=True)
             .encode(
                 x="Importance:Q",
