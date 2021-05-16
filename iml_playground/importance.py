@@ -7,32 +7,36 @@ from sklearn import inspection
 
 
 class FeatureImportance:
-    def __init__(self, model, top_n: int = 15) -> None:
+    def __init__(self, model) -> None:
         self.model = model
         self.ds = model.ds
-        self.top_n = top_n
-        self.top_n_imp, self.sorted_names = self._calculate()
+        self.sorted_imp, self.sorted_names = self._calculate()
 
     def _calculate(self):
+        scoring = (
+            "roc_auc" if self.model.estimator._estimator_type == "classifier" else None
+        )
         imp = inspection.permutation_importance(
             estimator=self.model.estimator,
             X=self.ds.X_test,
             y=self.ds.y_test,
-            scoring="roc_auc",
+            scoring=scoring,
             n_repeats=10,
             random_state=42,
             n_jobs=-1,
         )
-        sorted_idx = np.median(imp.importances, axis=1).argsort()[-self.top_n :]
+        sorted_idx = np.median(imp.importances, axis=1).argsort()
         sorted_names = list(self.model.ds.feature_names[sorted_idx])
-        top_n_imp = imp.importances[sorted_idx]
-        return top_n_imp, sorted_names
+        sorted_imp = imp.importances[sorted_idx]
+        return sorted_imp, sorted_names
 
-    def plot(self, altair_config: Dict[str, Any]) -> alt.Chart:
+    def plot(self, altair_config: Dict[str, Any], top_n: int = 15) -> alt.Chart:
+        top_n_imp = self.sorted_imp[-top_n:]
+        top_n_names = self.sorted_names[-top_n:]
         df = pd.DataFrame(
             {
-                "Feature": np.repeat(self.sorted_names, self.top_n_imp.shape[0]),
-                "Importance": self.top_n_imp.reshape(-1),
+                "Feature": np.repeat(top_n_names, top_n_imp.shape[0]),
+                "Importance": top_n_imp.reshape(-1),
             }
         ).round(6)
         chart = (

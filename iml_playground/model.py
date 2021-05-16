@@ -4,7 +4,8 @@ from typing import Any, Dict
 import altair as alt
 import pandas as pd
 from sklearn import metrics
-from sklearn.ensemble import RandomForestClassifier
+from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
+from sklearn.linear_model import LinearRegression
 
 from .dataset import Dataset
 
@@ -14,18 +15,38 @@ class Model:
     """A container for the trained model and predictions."""
 
     ds: Dataset
+    estimator_name: str
 
     def __post_init__(self):
+        self._init_estimator()
         self._fit_estimator()
         self._register_predictions()
 
+    def _init_estimator(self):
+        estimators = {
+            "Linear Regression": LinearRegression(),
+            "Random Forest Regressor": RandomForestRegressor(
+                n_estimators=20, min_samples_leaf=3, max_depth=12, random_state=42
+            ),
+            "Random Forest Classifier": RandomForestClassifier(
+                n_estimators=20, min_samples_leaf=3, max_depth=12, random_state=42
+            ),
+        }
+        self.estimator = estimators[self.estimator_name]
+
     def _fit_estimator(self):
-        self.estimator = RandomForestClassifier(
-            n_estimators=20, min_samples_leaf=3, max_depth=12, random_state=42
-        ).fit(self.ds.X_train, self.ds.y_train)
+        self.estimator = self.estimator.fit(self.ds.X_train, self.ds.y_train)
 
     def _register_predictions(self):
-        self.y_pred = self.estimator.predict_proba(self.ds.X_test)[:, 1]
+        estimator_type = self.estimator._estimator_type
+        if estimator_type == "classifier":
+            self.y_pred = self.estimator.predict_proba(self.ds.X_test)[:, 1]
+        elif estimator_type == "regressor":
+            self.y_pred = self.estimator.predict(self.ds.X_test)
+        else:
+            raise ValueError(
+                f"Estimator type '{estimator_type}' is not supported. Use 'classifier' or 'regressor'."  # noqa
+            )
 
     def plot_prediction_histogram(
         self, p_min: float, p_max: float, altair_config: Dict[str, Any]

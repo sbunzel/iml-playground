@@ -2,33 +2,21 @@ from dataclasses import dataclass
 
 import numpy as np
 import pandas as pd
-import streamlit as st
 from sklearn.compose import ColumnTransformer
 from sklearn.impute import SimpleImputer
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder
 
 
-@st.cache
-def read_train_test(dataset: str):
-    train = pd.read_csv(
-        f"https://raw.githubusercontent.com/sbunzel/iml-playground/main/resources/data/{dataset}/train.csv"  # noqa
-    )
-    test = pd.read_csv(
-        f"https://raw.githubusercontent.com/sbunzel/iml-playground/main/resources/data/{dataset}/test.csv"  # noqa
-    )
-    return train, test
-
-
 @dataclass
 class Dataset:
     """A container for convenient access to raw and preprocessed data."""
 
-    name: str
+    train: pd.DataFrame
+    test: pd.DataFrame
     target: str
 
     def __post_init__(self):
-        self.train, self.test = read_train_test(dataset=self.name)
         self._split_x_y()
         self._register_feature_names()
         self._impute_and_encode()
