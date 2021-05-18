@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+# from dataclasses import dataclass
 from typing import Any, Dict
 
 import altair as alt
@@ -10,17 +10,12 @@ from sklearn.linear_model import LinearRegression
 from .dataset import Dataset
 
 
-@dataclass
-class Model:
-    """A container for the trained model and predictions."""
-
-    ds: Dataset
-    estimator_name: str
-
-    def __post_init__(self):
+class BaseModel:
+    def __init__(self, ds: Dataset, estimator_name: str):
+        self.ds = ds
+        self.estimator_name = estimator_name
         self._init_estimator()
         self._fit_estimator()
-        self._register_predictions()
 
     def _init_estimator(self):
         estimators = {
@@ -45,15 +40,33 @@ class Model:
     def _fit_estimator(self):
         self.estimator = self.estimator.fit(self.ds.X_train, self.ds.y_train)
 
-    def _register_predictions(self):
-        if self.task == "classification":
-            self.y_pred = self.estimator.predict_proba(self.ds.X_test)[:, 1]
-        elif self.task == "regression":
-            self.y_pred = self.estimator.predict(self.ds.X_test)
 
-    def plot_prediction_histogram(
-        self, p_min: float, p_max: float, altair_config: Dict[str, Any]
-    ) -> alt.Chart:
+class Model(BaseModel):
+    def __init__(self, ds: Dataset, estimator_name: str):
+        super().__init__(ds, estimator_name)
+        if self.task == "classification":
+            self.model = ClassificationModel(ds, estimator_name)
+        else:
+            self.model = RegressionModel(ds, estimator_name)
+        self.model._register_predictions()
+
+    def plot_predictions(self, altair_config: Dict[str, Any], **kwargs) -> alt.Chart:
+        return self.model.plot_predictions(altair_config, **kwargs)
+
+    def plot_performace(self, altair_config: Dict[str, Any], **kwargs) -> alt.Chart:
+        return self.model.plot_performace(altair_config, **kwargs)
+
+
+class ClassificationModel(BaseModel):
+    def __init__(self, ds: Dataset, estimator_name: str):
+        super().__init__(ds, estimator_name)
+
+    def _register_predictions(self):
+        self.y_pred = self.estimator.predict_proba(self.ds.X_test)[:, 1]
+
+    def plot_predictions(self, altair_config: Dict[str, Any], **kwargs) -> alt.Chart:
+        p_min = kwargs["p_min"]
+        p_max = kwargs["p_max"]
         df = pd.DataFrame(data={"target": 1, "prediction": self.y_pred}).assign(
             focus=lambda df: df["prediction"].between(p_min, p_max)
         )
@@ -82,16 +95,12 @@ class Model:
             .configure_title(**altair_config["title_config"])
         )
 
-    def plot_class_performance(
-        self,
-        threshold: float,
-        altair_config: Dict[str, Any],
-    ) -> alt.Chart:
+    def plot_performace(self, altair_config: Dict[str, Any], **kwargs) -> alt.Chart:
+        threshold = kwargs["threshold"]
         perf_df = self._class_performance(threshold=threshold)
         plot_df = perf_df.drop(columns="support").melt(
             id_vars=["target"], var_name="metric", value_name="score"
         )
-
         return (
             alt.Chart(plot_df)
             .mark_bar()
@@ -122,3 +131,35 @@ class Model:
             .rename(columns={"index": "target"})
         )
         return df
+
+
+class RegressionModel(BaseModel):
+    def __init__(self, ds: Dataset, estimator_name: str):
+        super().__init__(ds, estimator_name)
+
+    def _register_predictions(self):
+        self.y_pred = self.estimator.predict(self.ds.X_test)
+
+    def plot_predictions(self, altair_config: Dict[str, Any], **kwargs) -> alt.Chart:
+        plot_df = pd.DataFrame(
+            {"Actual": self.ds.y_test, "Predicted": self.y_pred}
+        ).assign(
+            **{
+                "Absolute Percentage Error": lambda df: (
+                    df["Actual"] - df["Predicted"]
+                ).abs()
+                / df["Actual"]
+            }
+        )
+        return (
+            alt.Chart(plot_df)
+            .mark_point()
+            .encode(x="Actual", y="Absolute Percentage Error")
+            .properties(
+                width="container", height=300, title="Actuals vs. Prediction Error"
+            )
+            .configure_title(**altair_config["title_config"])
+        )
+
+    def plot_performace(self, altair_config: Dict[str, Any], **kwargs) -> alt.Chart:
+        pass

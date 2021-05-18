@@ -59,19 +59,20 @@ def main():
                 1.0,
                 0.5,
             )
-            chart = model.plot_prediction_histogram(
-                p_min=threshold, p_max=1, altair_config=ALTAIR_CONFIG
+            chart = model.plot_predictions(
+                altair_config=ALTAIR_CONFIG, p_min=threshold, p_max=1
             )
             distribution_plot.altair_chart(chart, use_container_width=True)
         else:
-            st.write("PLACEHOLDER")
+            chart = model.plot_predictions(altair_config=ALTAIR_CONFIG)
+            st.altair_chart(chart, use_container_width=True)
     with right:
         st.markdown(utils.read_md("model_predictions.md"))
 
     left, right = st.beta_columns(2)
     with left:
         if model.task == "classification":
-            chart = model.plot_class_performance(
+            chart = model.plot_performace(
                 threshold=threshold,
                 altair_config=ALTAIR_CONFIG,
             )
