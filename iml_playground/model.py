@@ -1,7 +1,7 @@
-# from dataclasses import dataclass
 from typing import Any, Dict
 
 import altair as alt
+import numpy as np
 import pandas as pd
 from sklearn import metrics
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
@@ -53,8 +53,8 @@ class Model(BaseModel):
     def plot_predictions(self, altair_config: Dict[str, Any], **kwargs) -> alt.Chart:
         return self.model.plot_predictions(altair_config, **kwargs)
 
-    def plot_performace(self, altair_config: Dict[str, Any], **kwargs) -> alt.Chart:
-        return self.model.plot_performace(altair_config, **kwargs)
+    def plot_performance(self, altair_config: Dict[str, Any], **kwargs) -> alt.Chart:
+        return self.model.plot_performance(altair_config, **kwargs)
 
 
 class ClassificationModel(BaseModel):
@@ -95,9 +95,12 @@ class ClassificationModel(BaseModel):
             .configure_title(**altair_config["title_config"])
         )
 
-    def plot_performace(self, altair_config: Dict[str, Any], **kwargs) -> alt.Chart:
-        threshold = kwargs["threshold"]
-        perf_df = self._class_performance(threshold=threshold)
+    def plot_performance(
+        self, altair_config: Dict[str, Any], threshold: float
+    ) -> alt.Chart:
+        perf_df = self._class_performance(
+            y_true=self.ds.y_test, y_pred=self.y_pred, threshold=threshold
+        )
         plot_df = perf_df.drop(columns="support").melt(
             id_vars=["target"], var_name="metric", value_name="score"
         )
@@ -118,14 +121,17 @@ class ClassificationModel(BaseModel):
             .configure_title(**altair_config["title_config"])
         )
 
-    def _class_performance(self, threshold: float) -> pd.DataFrame:
+    @staticmethod
+    def _class_performance(
+        y_true: np.ndarray, y_pred: np.ndarray, threshold: float
+    ) -> pd.DataFrame:
         report = metrics.classification_report(
-            y_true=self.ds.y_test,
-            y_pred=self.y_pred > threshold,
+            y_true=y_true,
+            y_pred=y_pred > threshold,
             output_dict=True,
         )
         df = (
-            pd.DataFrame(report)[[str(c) for c in self.ds.y_test.unique()]]
+            pd.DataFrame(report)[[str(v) for v in y_true.unique()]]
             .T.astype({"support": int})[["f1-score", "precision", "recall", "support"]]
             .reset_index()
             .rename(columns={"index": "target"})
@@ -143,23 +149,31 @@ class RegressionModel(BaseModel):
     def plot_predictions(self, altair_config: Dict[str, Any], **kwargs) -> alt.Chart:
         plot_df = pd.DataFrame(
             {"Actual": self.ds.y_test, "Predicted": self.y_pred}
-        ).assign(
-            **{
-                "Absolute Percentage Error": lambda df: (
-                    df["Actual"] - df["Predicted"]
-                ).abs()
-                / df["Actual"]
-            }
-        )
+        ).assign(**{"Residual": lambda df: (df["Actual"] - df["Predicted"])})
         return (
             alt.Chart(plot_df)
             .mark_point()
-            .encode(x="Actual", y="Absolute Percentage Error")
-            .properties(
-                width="container", height=300, title="Actuals vs. Prediction Error"
-            )
+            .encode(x="Actual", y="Residual")
+            .properties(width="container", height=300, title="Actuals vs. Residuals")
             .configure_title(**altair_config["title_config"])
         )
 
-    def plot_performace(self, altair_config: Dict[str, Any], **kwargs) -> alt.Chart:
-        pass
+    def plot_performance(self, altair_config: Dict[str, Any]) -> alt.Chart:
+        chart = self._qq_actuals_predicted(y_true=self.ds.y_test, y_pred=self.y_pred)
+        return chart.configure_title(**altair_config["title_config"])
+
+    @staticmethod
+    def _qq_actuals_predicted(y_true: np.ndarray, y_pred: np.ndarray) -> alt.Chart:
+        plot_df = pd.DataFrame(
+            {"Quantile actual": y_true, "Quantile predicted": y_pred}
+        ).quantile(q=np.arange(0, 1.01, 0.01))
+        return (
+            alt.Chart(plot_df)
+            .mark_point()
+            .encode(x="Quantile actual", y="Quantile predicted")
+            .properties(
+                width="container",
+                height=300,
+                title="Quantiles of Actuals vs. Predicted",
+            )
+        )

@@ -72,13 +72,14 @@ def main():
     left, right = st.beta_columns(2)
     with left:
         if model.task == "classification":
-            chart = model.plot_performace(
-                threshold=threshold,
+            chart = model.plot_performance(
+                altair_config=ALTAIR_CONFIG, threshold=threshold
+            )
+        else:
+            chart = model.plot_performance(
                 altair_config=ALTAIR_CONFIG,
             )
-            st.altair_chart(chart, use_container_width=True)
-        else:
-            st.write("PLACEHOLDER")
+        st.altair_chart(chart, use_container_width=True)
     with right:
         st.markdown(utils.read_md("model_performance.md"))
 
