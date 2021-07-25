@@ -4,8 +4,8 @@ import pandas as pd
 import streamlit as st
 
 
-def read_md(file):
-    return Path(f"resources/markdown/{file}").read_text()
+def read_md(dataset: str, file: str):
+    return Path(f"resources/markdown/{dataset}/{file}").read_text()
 
 
 @st.cache

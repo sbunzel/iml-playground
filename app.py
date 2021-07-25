@@ -34,7 +34,7 @@ def main():
 
     left, right = st.beta_columns(2)
     with left:
-        st.markdown(utils.read_md("dataset.md"))
+        st.markdown(utils.read_md(dataset=dataset_name, file="dataset.md"))
     with right:
         train, test = utils.read_train_test(dataset=dataset_name)
         dataset = iml.Dataset(
@@ -67,7 +67,7 @@ def main():
             chart = model.plot_predictions(altair_config=ALTAIR_CONFIG)
             st.altair_chart(chart, use_container_width=True)
     with right:
-        st.markdown(utils.read_md("model_predictions.md"))
+        st.markdown(utils.read_md(dataset=dataset_name, file="model_predictions.md"))
 
     left, right = st.beta_columns(2)
     with left:
@@ -81,13 +81,13 @@ def main():
             )
         st.altair_chart(chart, use_container_width=True)
     with right:
-        st.markdown(utils.read_md("model_performance.md"))
+        st.markdown(utils.read_md(dataset=dataset_name, file="model_performance.md"))
 
     st.markdown("## Feature Importance")
 
     left, right = st.beta_columns(2)
     with left:
-        st.markdown(utils.read_md("feature_importance.md"))
+        st.markdown(utils.read_md(dataset=dataset_name, file="feature_importance.md"))
     with right:
         imp = iml.FeatureImportance(model=model)
         chart = imp.plot(altair_config=ALTAIR_CONFIG, top_n=10)
@@ -104,7 +104,9 @@ def main():
             options=GLOBAL_EFFECTS_METHODS,
             format_func=lambda s: s.replace("_", " ").title(),
         )
-        st.markdown(utils.read_md(f"{global_effects_method}.md"))
+        st.markdown(
+            utils.read_md(dataset=dataset_name, file=f"{global_effects_method}.md")
+        )
     with left:
         global_effects_feature = st.selectbox(
             label="Select a feature to calculate global effects for",
