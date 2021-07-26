@@ -146,7 +146,11 @@ class RegressionModel(BaseModel):
     def _register_predictions(self):
         self.y_pred = self.estimator.predict(self.ds.X_test)
 
-    def plot_predictions(self, altair_config: Dict[str, Any], **kwargs) -> alt.Chart:
+    def plot_predictions(self, altair_config: Dict[str, Any]) -> alt.Chart:
+        chart = self.plot_actuals_predicted(y_true=self.ds.y_test, y_pred=self.y_pred)
+        return chart.configure_title(**altair_config["title_config"])
+
+    def plot_performance(self, altair_config: Dict[str, Any]) -> alt.Chart:
         plot_df = pd.DataFrame(
             {"Actual": self.ds.y_test, "Predicted": self.y_pred}
         ).assign(**{"Residual": lambda df: (df["Actual"] - df["Predicted"])})
@@ -158,22 +162,16 @@ class RegressionModel(BaseModel):
             .configure_title(**altair_config["title_config"])
         )
 
-    def plot_performance(self, altair_config: Dict[str, Any]) -> alt.Chart:
-        chart = self._qq_actuals_predicted(y_true=self.ds.y_test, y_pred=self.y_pred)
-        return chart.configure_title(**altair_config["title_config"])
-
     @staticmethod
-    def _qq_actuals_predicted(y_true: np.ndarray, y_pred: np.ndarray) -> alt.Chart:
-        plot_df = pd.DataFrame(
-            {"Quantile actual": y_true, "Quantile predicted": y_pred}
-        ).quantile(q=np.arange(0, 1.01, 0.01))
+    def plot_actuals_predicted(y_true: np.ndarray, y_pred: np.ndarray) -> alt.Chart:
+        plot_df = pd.DataFrame({"Actual": y_true, "Predicted": y_pred})
         return (
             alt.Chart(plot_df)
             .mark_point()
-            .encode(x="Quantile actual", y="Quantile predicted")
+            .encode(x="Actual", y="Predicted")
             .properties(
                 width="container",
                 height=300,
-                title="Quantiles of Actuals vs. Predicted",
+                title="Actuals vs. Predicted",
             )
         )
