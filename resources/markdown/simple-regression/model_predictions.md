@@ -1,0 +1,3 @@
+We train two model's to predict the `Target` from the features: A [Linear Regression](https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LinearRegression.html) and a [Random Forest](https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.RandomForestRegressor.html) (use the select box in the sidebar to toggle between the two).
+
+Before interpreting the model, we want to understand how well it fits the data. A first step to do that is to plot the predicted values of the models against the actual values of the `Target`. If the points form a straight line, the model fits the data well.
