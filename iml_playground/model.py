@@ -56,6 +56,10 @@ class Model(BaseModel):
     def plot_performance(self, altair_config: Dict[str, Any], **kwargs) -> alt.Chart:
         return self.model.plot_performance(altair_config, **kwargs)
 
+    @property
+    def description(self) -> str:
+        return self.model.description
+
 
 class ClassificationModel(BaseModel):
     def __init__(self, ds: Dataset, estimator_name: str):
@@ -138,6 +142,13 @@ class ClassificationModel(BaseModel):
         )
         return df
 
+    @property
+    def description(self) -> str:
+        return (
+            f"The model is a {self.estimator_name} with the following parameters: "
+            + f"`{str(self.estimator)}`"
+        )
+
 
 class RegressionModel(BaseModel):
     def __init__(self, ds: Dataset, estimator_name: str):
@@ -174,4 +185,23 @@ class RegressionModel(BaseModel):
                 height=300,
                 title="Actuals vs. Predicted",
             )
+        )
+
+    @property
+    def description(self) -> str:
+        if isinstance(self.estimator, LinearRegression):
+            param_description = str(
+                {
+                    name: round(value, 2)
+                    for name, value in zip(
+                        ["Intercept", *self.ds.X_train.columns],
+                        [self.estimator.intercept_, *self.estimator.coef_],
+                    )
+                }
+            )
+        elif isinstance(self.estimator, RandomForestRegressor):
+            param_description = str(self.estimator)
+        return (
+            f"The model is a {self.estimator_name} with the following parameters: "
+            + f"`{param_description}`"
         )

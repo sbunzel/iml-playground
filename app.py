@@ -48,6 +48,7 @@ def main():
         options=DATASET_CONFIG[dataset_name]["models"],
     )
     model = iml.Model(ds=dataset, estimator_name=estimator_name)
+    st.markdown(model.description)
 
     left, right = st.beta_columns(2)
     with left:
