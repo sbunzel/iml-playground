@@ -70,7 +70,11 @@ class GlobalEffects:
             alt.Chart(values_df)
             .mark_bar(opacity=0.3)
             .encode(
-                alt.X(f"{self.feature}:Q", bin=alt.Bin(step=step_size)),
+                alt.X(
+                    f"{self.feature}:Q",
+                    bin=alt.Bin(step=step_size),
+                    axis=alt.Axis(title=self.feature),
+                ),
                 y=alt.Y("count()", title="Number of Samples"),
             )
         )
