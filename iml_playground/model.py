@@ -1,7 +1,7 @@
-from dataclasses import dataclass
 from typing import Any, Dict
 
 import altair as alt
+import numpy as np
 import pandas as pd
 from sklearn import metrics
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
@@ -10,17 +10,12 @@ from sklearn.linear_model import LinearRegression
 from .dataset import Dataset
 
 
-@dataclass
-class Model:
-    """A container for the trained model and predictions."""
-
-    ds: Dataset
-    estimator_name: str
-
-    def __post_init__(self):
+class BaseModel:
+    def __init__(self, ds: Dataset, estimator_name: str):
+        self.ds = ds
+        self.estimator_name = estimator_name
         self._init_estimator()
         self._fit_estimator()
-        self._register_predictions()
 
     def _init_estimator(self):
         estimators = {
@@ -33,24 +28,49 @@ class Model:
             ),
         }
         self.estimator = estimators[self.estimator_name]
+        if self.estimator._estimator_type == "classifier":
+            self.task = "classification"
+        elif self.estimator._estimator_type == "regressor":
+            self.task = "regression"
+        else:
+            raise ValueError(
+                f"Estimator type '{self.estimator._estimator_type}' is not supported. Use 'classifier' or 'regressor'."  # noqa
+            )
 
     def _fit_estimator(self):
         self.estimator = self.estimator.fit(self.ds.X_train, self.ds.y_train)
 
-    def _register_predictions(self):
-        estimator_type = self.estimator._estimator_type
-        if estimator_type == "classifier":
-            self.y_pred = self.estimator.predict_proba(self.ds.X_test)[:, 1]
-        elif estimator_type == "regressor":
-            self.y_pred = self.estimator.predict(self.ds.X_test)
-        else:
-            raise ValueError(
-                f"Estimator type '{estimator_type}' is not supported. Use 'classifier' or 'regressor'."  # noqa
-            )
 
-    def plot_prediction_histogram(
-        self, p_min: float, p_max: float, altair_config: Dict[str, Any]
-    ) -> alt.Chart:
+class Model(BaseModel):
+    def __init__(self, ds: Dataset, estimator_name: str):
+        super().__init__(ds, estimator_name)
+        if self.task == "classification":
+            self.model = ClassificationModel(ds, estimator_name)
+        else:
+            self.model = RegressionModel(ds, estimator_name)
+        self.model._register_predictions()
+
+    def plot_predictions(self, altair_config: Dict[str, Any], **kwargs) -> alt.Chart:
+        return self.model.plot_predictions(altair_config, **kwargs)
+
+    def plot_performance(self, altair_config: Dict[str, Any], **kwargs) -> alt.Chart:
+        return self.model.plot_performance(altair_config, **kwargs)
+
+    @property
+    def description(self) -> str:
+        return self.model.description
+
+
+class ClassificationModel(BaseModel):
+    def __init__(self, ds: Dataset, estimator_name: str):
+        super().__init__(ds, estimator_name)
+
+    def _register_predictions(self):
+        self.y_pred = self.estimator.predict_proba(self.ds.X_test)[:, 1]
+
+    def plot_predictions(self, altair_config: Dict[str, Any], **kwargs) -> alt.Chart:
+        p_min = kwargs["p_min"]
+        p_max = kwargs["p_max"]
         df = pd.DataFrame(data={"target": 1, "prediction": self.y_pred}).assign(
             focus=lambda df: df["prediction"].between(p_min, p_max)
         )
@@ -79,16 +99,15 @@ class Model:
             .configure_title(**altair_config["title_config"])
         )
 
-    def plot_class_performance(
-        self,
-        threshold: float,
-        altair_config: Dict[str, Any],
+    def plot_performance(
+        self, altair_config: Dict[str, Any], threshold: float
     ) -> alt.Chart:
-        perf_df = self._class_performance(threshold=threshold)
+        perf_df = self._class_performance(
+            y_true=self.ds.y_test, y_pred=self.y_pred, threshold=threshold
+        )
         plot_df = perf_df.drop(columns="support").melt(
             id_vars=["target"], var_name="metric", value_name="score"
         )
-
         return (
             alt.Chart(plot_df)
             .mark_bar()
@@ -106,16 +125,83 @@ class Model:
             .configure_title(**altair_config["title_config"])
         )
 
-    def _class_performance(self, threshold: float) -> pd.DataFrame:
+    @staticmethod
+    def _class_performance(
+        y_true: np.ndarray, y_pred: np.ndarray, threshold: float
+    ) -> pd.DataFrame:
         report = metrics.classification_report(
-            y_true=self.ds.y_test,
-            y_pred=self.y_pred > threshold,
+            y_true=y_true,
+            y_pred=y_pred > threshold,
             output_dict=True,
         )
         df = (
-            pd.DataFrame(report)[[str(c) for c in self.ds.y_test.unique()]]
+            pd.DataFrame(report)[[str(v) for v in y_true.unique()]]
             .T.astype({"support": int})[["f1-score", "precision", "recall", "support"]]
             .reset_index()
             .rename(columns={"index": "target"})
         )
         return df
+
+    @property
+    def description(self) -> str:
+        return (
+            f"The model is a {self.estimator_name} with the following parameters: "
+            + f"`{str(self.estimator)}`"
+        )
+
+
+class RegressionModel(BaseModel):
+    def __init__(self, ds: Dataset, estimator_name: str):
+        super().__init__(ds, estimator_name)
+
+    def _register_predictions(self):
+        self.y_pred = self.estimator.predict(self.ds.X_test)
+
+    def plot_predictions(self, altair_config: Dict[str, Any]) -> alt.Chart:
+        chart = self.plot_actuals_predicted(y_true=self.ds.y_test, y_pred=self.y_pred)
+        return chart.configure_title(**altair_config["title_config"])
+
+    def plot_performance(self, altair_config: Dict[str, Any]) -> alt.Chart:
+        plot_df = pd.DataFrame(
+            {"Actual": self.ds.y_test, "Predicted": self.y_pred}
+        ).assign(**{"Residual": lambda df: (df["Actual"] - df["Predicted"])})
+        return (
+            alt.Chart(plot_df)
+            .mark_point()
+            .encode(x="Actual", y="Residual")
+            .properties(width="container", height=300, title="Actuals vs. Residuals")
+            .configure_title(**altair_config["title_config"])
+        )
+
+    @staticmethod
+    def plot_actuals_predicted(y_true: np.ndarray, y_pred: np.ndarray) -> alt.Chart:
+        plot_df = pd.DataFrame({"Actual": y_true, "Predicted": y_pred})
+        return (
+            alt.Chart(plot_df)
+            .mark_point()
+            .encode(x="Actual", y="Predicted")
+            .properties(
+                width="container",
+                height=300,
+                title="Actuals vs. Predicted",
+            )
+        )
+
+    @property
+    def description(self) -> str:
+        if isinstance(self.estimator, LinearRegression):
+            param_description = str(
+                {
+                    name: round(value, 2)
+                    for name, value in zip(
+                        ["Intercept", *self.ds.X_train.columns],
+                        [self.estimator.intercept_, *self.estimator.coef_],
+                    )
+                }
+            )
+        elif isinstance(self.estimator, RandomForestRegressor):
+            param_description = str(self.estimator)
+        return (
+            f"The model is a {self.estimator_name} with the following parameters: "
+            + f"`{param_description}`"
+        )
